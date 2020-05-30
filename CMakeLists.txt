@@ -32,10 +32,17 @@ file(GLOB BINDINGS
   CONFIGURE_DEPENDS
   "${CMAKE_BINARY_DIR}/bindings/*.cpp")
 
-file(GLOB SHADERS
+file(GLOB VERT_SHADERS
   LIST_DIRECTORIES false
   CONFIGURE_DEPENDS
-  "${CMAKE_SOURCE_DIR}/rane/assets/*")
+  "${CMAKE_SOURCE_DIR}/rane/assets/*.vert")
+
+file(GLOB FRAG_SHADERS
+  LIST_DIRECTORIES false
+  CONFIGURE_DEPENDS
+  "${CMAKE_SOURCE_DIR}/rane/assets/*.frag")
+
+set(SHADERS ${FRAG_SHADERS} ${VERT_SHADERS})
 
 set_source_files_properties(${SRCS}
   PROPERTIES
@@ -53,7 +60,8 @@ set_source_files_properties(${SRCS}
 -Wall;\
 -Wextra;\
 -Wconversion;\
--Wpedantic;")
+-Wpedantic;\
+-Werror=return-type")
 
 message(STATUS "durrr ${SHADERS}")
 
@@ -72,13 +80,8 @@ target_compile_definitions(rane PUBLIC VK_PROTOTYPES)
 target_compile_features(rane PUBLIC cxx_std_17)
 target_compile_options(rane PRIVATE -flto -pipe)
 
-add_custom_command(TARGET rane
-  POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/rane/assets/glsl_shader.frag ${PROJECT_BINARY_DIR}/bin
-  COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/rane/assets/glsl_shader.vert ${PROJECT_BINARY_DIR}/bin)
-
 if(CMAKE_BUILD_TYPE MATCHES DEBUG)
-  target_compile_options(rane PRIVATE -fsanitize=address -fsanitize=undefined)
+  target_compile_options(rane PRIVATE -fsanitize=address,undefined)
   target_link_libraries(rane PRIVATE asan ubsan)
 endif()
 
