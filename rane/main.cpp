@@ -17,7 +17,7 @@
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
-struct GLFWWindowDeleter {
+struct GLFWwindowDeleter {
   auto operator()(GLFWwindow* window) const noexcept -> void {
     glfwDestroyWindow(window);
   }
@@ -28,16 +28,18 @@ class GlfwCtx {
   GlfwCtx() { glfwInit(); }
 
   GlfwCtx(GlfwCtx const&) noexcept = delete;
-  GlfwCtx(GlfwCtx&&) noexcept = default;
+  GlfwCtx(GlfwCtx&&) noexcept = delete;
 
   auto operator=(GlfwCtx const&) -> GlfwCtx& = delete;
-  auto operator=(GlfwCtx&&) noexcept -> GlfwCtx& = default;
+  auto operator=(GlfwCtx&&) noexcept -> GlfwCtx& = delete;
 
   ~GlfwCtx() { glfwTerminate(); }
 };
 
 class VulkanCtx {
  public:
+  vk::Instance inst;
+
   explicit VulkanCtx(GlfwCtx&, std::uint32_t const version,
                      std::string_view app_name) {
     auto const app_info =
@@ -50,18 +52,17 @@ class VulkanCtx {
     auto const inst_info =
         vk::InstanceCreateInfo{{}, &app_info, {}, {}, ext_count, ext};
 
-    if (vk::createInstance(&inst_info, nullptr, &inst_) != vk::Result::eSuccess)
+    auto const res = vk::createInstance(&inst_info, nullptr, &inst);
+
+    if (res != vk::Result::eSuccess)
       throw std::runtime_error("Failed to create Vulkan instance!");
   }
 
   VulkanCtx(VulkanCtx const&) = delete;
-  VulkanCtx(VulkanCtx&&) noexcept = default;
+  VulkanCtx(VulkanCtx&&) noexcept = delete;
 
   auto operator=(VulkanCtx const&) -> VulkanCtx& = delete;
-  auto operator=(VulkanCtx&&) noexcept -> VulkanCtx& = default;
-
- private:
-  vk::Instance inst_;
+  auto operator=(VulkanCtx&&) noexcept -> VulkanCtx& = delete;
 };
 
 class Rane {
@@ -69,7 +70,6 @@ class Rane {
   Rane(GlfwCtx& glfw_ctx, VulkanCtx& vulkan_ctx)
       : glfw_ctx_{&glfw_ctx}, vulkan_ctx_{&vulkan_ctx} {
     init_window();
-    init_vulkan();
   }
 
   [[nodiscard]] auto loop() -> bool {
@@ -83,20 +83,14 @@ class Rane {
   GlfwCtx* glfw_ctx_;
   VulkanCtx* vulkan_ctx_;
 
-  std::unique_ptr<GLFWwindow, GLFWWindowDeleter> window_;
-
-  vk::Instance inst_;
+  std::unique_ptr<GLFWwindow, GLFWwindowDeleter> window_;
 
   auto init_window() -> void {
-    glfwInit();
-
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
     window_.reset(glfwCreateWindow(800, 600, "Vulkan", nullptr, nullptr));
   }
-
-  auto init_vulkan() -> void {}
 };
 
 int main() {
