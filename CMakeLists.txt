@@ -63,8 +63,6 @@ set_source_files_properties(${SRCS}
 -Wpedantic;\
 -Werror=return-type")
 
-message(STATUS "durrr ${SHADERS}")
-
 add_executable(rane ${SRCS} ${BINDINGS} ${SHADERS})
 
 target_include_directories(rane PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
