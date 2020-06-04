@@ -41,6 +41,7 @@ public:
 
 private:
   vk::UniqueInstance inst_;
+  vk::UniqueSurfaceKHR surface_;
   vk::PhysicalDevice phys_dev_;
   QueueFamilyIndices queue_indices_;
   vk::UniqueDevice dev_;

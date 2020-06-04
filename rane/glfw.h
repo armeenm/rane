@@ -1,6 +1,11 @@
 #pragma once
 
 #include <GLFW/glfw3.h>
+#include <memory>
+
+struct GLFWwindowDeleter {
+  auto operator()(GLFWwindow* window) const noexcept -> void { glfwDestroyWindow(window); }
+};
 
 class GlfwCtx {
 public:
@@ -13,9 +18,10 @@ public:
   auto operator=(GlfwCtx&&) noexcept -> GlfwCtx& = delete;
 
   ~GlfwCtx() { glfwTerminate(); }
-};
 
-struct GLFWwindowDeleter {
-  auto operator()(GLFWwindow* window) const noexcept -> void { glfwDestroyWindow(window); }
-};
+  [[nodiscard]] auto window() const noexcept -> GLFWwindow* { return window_.get(); }
+  auto window(GLFWwindow* window) noexcept -> void { window_.reset(window); }
 
+private:
+  std::unique_ptr<GLFWwindow, GLFWwindowDeleter> window_;
+};
