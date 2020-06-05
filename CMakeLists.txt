@@ -74,7 +74,7 @@ find_library(VULKAN_LIB NAMES vulkan vulkan-1)
 
 target_link_libraries(rane PRIVATE ${CONAN_LIBS} ${VULKAN_LIB})
 
-target_compile_definitions(rane PUBLIC VK_PROTOTYPES)
+target_compile_definitions(rane PUBLIC VK_PROTOTYPES GLFW_INCLUDE_VULKAN)
 target_compile_features(rane PUBLIC cxx_std_17)
 target_compile_options(rane PRIVATE -flto -pipe)
 

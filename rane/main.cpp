@@ -8,11 +8,8 @@
 #include <fmt/core.h>
 #include <spdlog/spdlog.h>
 
-auto constexpr inline window_width = 800U;
-auto constexpr inline window_height = 600U;
-auto constexpr inline window_title = "RANE";
-
 int main() {
+  /*
   try {
     spdlog::set_level(spdlog::level::debug);
 
@@ -27,4 +24,5 @@ int main() {
   } catch (std::exception const& e) {
     spdlog::error(e.what());
   }
+  */
 }

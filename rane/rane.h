@@ -3,39 +3,40 @@
 #include "rane/glfw.h"
 #include "rane/vulkan.h"
 
-#include <GLFW/glfw3.h>
 #include <cstdint>
 #include <memory>
 #include <spdlog/spdlog.h>
 #include <string_view>
+#include <vulkan/vulkan.hpp>
 
 class Rane {
 public:
-  Rane(GlfwCtx& glfw_ctx, VulkanCtx& vulkan_ctx, std::uint32_t width, std::uint32_t height,
-       std::string_view title)
-      : glfw_ctx_{&glfw_ctx}, vulkan_ctx_{&vulkan_ctx} {
-
+  explicit Rane() {
     spdlog::debug("Constructing Rane instance");
-    init_window(width, height, title);
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
   }
 
-  auto loop() -> void { glfwPollEvents(); }
+  Rane(Rane const&) = delete;
+  Rane(Rane&&) = delete;
 
+  auto operator=(Rane const&) -> Rane& = delete;
+  auto operator=(Rane &&) -> Rane& = delete;
+
+  ~Rane() { inst_.destroy(); }
+
+  auto loop() -> void { glfwPollEvents(); }
   [[nodiscard]] auto done() -> bool { return glfwWindowShouldClose(window_.get()); }
 
 private:
-  GlfwCtx* glfw_ctx_;
-  VulkanCtx* vulkan_ctx_;
+  auto constexpr static inline window_width = 800U;
+  auto constexpr static inline window_height = 600U;
+  auto constexpr static inline window_title = "RANE";
 
-  std::unique_ptr<GLFWwindow, GLFWwindowDeleter> window_;
-
-  auto init_window(std::uint32_t width, std::uint32_t height, std::string_view title) -> void {
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-    spdlog::info("Creating window...");
-    spdlog::debug("Window size {}x{}, titled {}", width, height, title);
-
-    window_.reset(glfwCreateWindow(width, height, "RANE", nullptr, nullptr));
-  }
+  GlfwCtx glfw_ctx_ = GlfwCtx{};
+  GlfwWindow window_ = GlfwWindow{glfw_ctx_, window_width, window_height, window_title, nullptr};
+  vk::Instance inst_ = create_instance(glfw_ctx_, VK_MAKE_VERSION(0, 0, 1), "RANE");
+  vk::SurfaceKHR surface_ = create_surface(inst_, window_);
+  std::pair<vk::PhysicalDevice, QueueFamilyIndices> phys_dev_ = pick_phys_dev(inst_);
+  vk::Device dev_ = make_logical_device(phys_dev_.first, phys_dev_.second);
 };
