@@ -6,7 +6,11 @@
 
 class GlfwCtx {
 public:
-  GlfwCtx() { glfwInit(); }
+  GlfwCtx() {
+    glfwInit();
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+  }
 
   GlfwCtx(GlfwCtx const&) = delete;
   GlfwCtx(GlfwCtx&&) noexcept = delete;

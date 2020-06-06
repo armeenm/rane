@@ -9,14 +9,10 @@
 #include <spdlog/spdlog.h>
 
 int main() {
-  /*
   try {
     spdlog::set_level(spdlog::level::debug);
 
-    auto glfw_ctx = GlfwCtx{};
-    auto vulkan_ctx = VulkanCtx{glfw_ctx, VK_MAKE_VERSION(0, 0, 1), "RANE"};
-
-    auto rane = Rane{glfw_ctx, vulkan_ctx, window_width, window_height, window_title};
+    auto const rane = Rane{};
 
     while (!rane.done())
       rane.loop();
@@ -24,5 +20,4 @@ int main() {
   } catch (std::exception const& e) {
     spdlog::error(e.what());
   }
-  */
 }
