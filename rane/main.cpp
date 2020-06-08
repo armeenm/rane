@@ -1,6 +1,3 @@
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-
 #include "rane/glfw.h"
 #include "rane/rane.h"
 #include "rane/vulkan.h"
