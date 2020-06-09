@@ -4,7 +4,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <fmt/core.h>
 #include <magic_enum.hpp>
 #include <optional>
 #include <range/v3/algorithm/find.hpp>
@@ -51,8 +50,9 @@ struct SwapChainSupportDetails {
     auto const supported_layers = vk::enumerateInstanceLayerProperties();
 
     auto supported_layer_strs =
-        supported_layers |
-        ranges::views::transform([](vk::LayerProperties const& layer) { return layer.layerName; });
+        supported_layers | ranges::views::transform([](vk::LayerProperties const& layer) {
+          return std::string{layer.layerName};
+        });
 
     for (auto const& layer : supported_layer_strs)
       spdlog::debug("Vulkan supports layer {}", layer);

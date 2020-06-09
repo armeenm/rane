@@ -65,16 +65,18 @@ set_source_files_properties(${SRCS}
 
 add_executable(rane ${SRCS} ${BINDINGS} ${SHADERS})
 
+find_library(VULKAN_LIB NAMES vulkan vulkan-1)
+find_package(PkgConfig REQUIRED)
+pkg_search_module(GLFW REQUIRED glfw3)
+
 target_include_directories(rane PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(rane SYSTEM PRIVATE
   ${CMAKE_BINARY_DIR}/bindings
-  ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
+  ${CMAKE_CURRENT_SOURCE_DIR}/third_party
+  ${GLFW_INCLUDE_DIRS})
 
-find_library(VULKAN_LIB NAMES vulkan vulkan-1)
+target_link_libraries(rane PRIVATE ${CONAN_LIBS} ${VULKAN_LIB} ${GLFW_LIBRARIES})
 
-target_link_libraries(rane PRIVATE ${CONAN_LIBS} ${VULKAN_LIB})
-
-target_compile_definitions(rane PUBLIC VK_PROTOTYPES GLFW_INCLUDE_VULKAN)
 target_compile_features(rane PUBLIC cxx_std_17)
 target_compile_options(rane PRIVATE -flto -pipe)
 

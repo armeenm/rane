@@ -44,10 +44,7 @@ private:
   GlfwWindow window_ = GlfwWindow{glfw_ctx_, window_width, window_height, window_title, nullptr};
   vk::SurfaceKHR surface_ = make_surface(inst_, window_);
   std::pair<vk::PhysicalDevice, QueueFamilyIndices> phys_dev_ = make_phys_dev(inst_, surface_);
-
-  // vk::Device dev_ = make_logical_device(phys_dev_.first, phys_dev_.second);
-  /*
+  vk::Device dev_ = make_logical_device(phys_dev_.first, phys_dev_.second);
   vk::SwapchainKHR swapchain_ =
       make_swapchain(window_width, window_height, surface_, phys_dev_, dev_);
-      */
 };
