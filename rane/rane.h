@@ -26,6 +26,8 @@ public:
   auto operator=(Rane &&) -> Rane& = delete;
 
   ~Rane() {
+    for (auto&& image_view : swapchain_image_views_)
+      vkDestroyImageView(dev_, image_view, nullptr);
     vkDestroySwapchainKHR(dev_, std::get<0>(swapchain_), nullptr);
     vkDestroySurfaceKHR(inst_, surface_, nullptr);
     inst_.destroy();
@@ -40,12 +42,15 @@ private:
   auto constexpr static inline window_title = "RANE";
 
   GlfwCtx glfw_ctx_ = GlfwCtx{};
-  vk::Instance inst_ = make_instance(glfw_ctx_, VK_MAKE_VERSION(0, 0, 1), "RANE");
   GlfwWindow window_ = GlfwWindow{glfw_ctx_, window_width, window_height, window_title, nullptr};
+
+  vk::Instance inst_ = make_instance(glfw_ctx_, VK_MAKE_VERSION(0, 0, 1), "RANE");
   vk::SurfaceKHR surface_ = make_surface(inst_, window_);
   std::pair<vk::PhysicalDevice, QueueFamilyIndices> phys_dev_ = make_phys_dev(inst_, surface_);
   vk::Device dev_ = make_logical_device(phys_dev_.first, phys_dev_.second);
   std::tuple<vk::SwapchainKHR, vk::Format, vk::Extent2D> swapchain_ =
       make_swapchain(window_width, window_height, surface_, phys_dev_, dev_);
   std::vector<vk::Image> swapchain_images_ = dev_.getSwapchainImagesKHR(std::get<0>(swapchain_));
+  std::vector<vk::ImageView> swapchain_image_views_ =
+      make_image_views(dev_, swapchain_images_, std::get<1>(swapchain_));
 };

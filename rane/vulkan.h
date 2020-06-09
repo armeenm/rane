@@ -208,6 +208,26 @@ struct SwapChainSupportDetails {
   throw std::runtime_error{"Failed to find capable physical device"};
 }
 
+[[nodiscard]] auto make_logical_device(vk::PhysicalDevice const& phys_dev,
+                                       QueueFamilyIndices const& queue_indices) -> vk::Device {
+  spdlog::debug("Constructing logical device...");
+
+  auto const priority = 1.0F;
+  auto const dev_queue_create_info =
+      vk::DeviceQueueCreateInfo{{}, *queue_indices.graphics_family, 1, &priority};
+  auto const dev_features = vk::PhysicalDeviceFeatures{};
+  auto const dev_create_info = vk::DeviceCreateInfo{{},
+                                                    1,
+                                                    &dev_queue_create_info,
+                                                    0,
+                                                    {},
+                                                    uint32_t(required_dev_exts.size()),
+                                                    required_dev_exts.data(),
+                                                    &dev_features};
+
+  return phys_dev.createDevice(dev_create_info);
+}
+
 [[nodiscard]] auto
 choose_swap_surface_format(std::vector<vk::SurfaceFormatKHR> const& available_formats)
     -> vk::SurfaceFormatKHR {
@@ -292,22 +312,18 @@ choose_swap_present_mode(std::vector<vk::PresentModeKHR> const& available_presen
   return std::make_tuple(dev.createSwapchainKHR(swapchain_info), surface_format.format, extent);
 }
 
-[[nodiscard]] auto make_logical_device(vk::PhysicalDevice const& phys_dev,
-                                       QueueFamilyIndices const& queue_indices) -> vk::Device {
-  spdlog::debug("Constructing logical device...");
+[[nodiscard]] auto make_image_views(vk::Device const& dev, std::vector<vk::Image> const& images,
+                                    vk::Format format) -> std::vector<vk::ImageView> {
 
-  auto const priority = 1.0F;
-  auto const dev_queue_create_info =
-      vk::DeviceQueueCreateInfo{{}, *queue_indices.graphics_family, 1, &priority};
-  auto const dev_features = vk::PhysicalDeviceFeatures{};
-  auto const dev_create_info = vk::DeviceCreateInfo{{},
-                                                    1,
-                                                    &dev_queue_create_info,
-                                                    0,
-                                                    {},
-                                                    uint32_t(required_dev_exts.size()),
-                                                    required_dev_exts.data(),
-                                                    &dev_features};
+  auto imageviews = std::vector<vk::ImageView>{images.size()};
 
-  return phys_dev.createDevice(dev_create_info);
+  for (std::size_t i = 0; i < imageviews.size(); ++i) {
+    auto const image_view_info = vk::ImageViewCreateInfo{
+        {},     images[i], vk::ImageViewType::e2D,
+        format, {},        vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}};
+
+    imageviews[i] = dev.createImageView(image_view_info);
+  }
+
+  return imageviews;
 }
