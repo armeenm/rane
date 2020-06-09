@@ -249,7 +249,8 @@ choose_swap_present_mode(std::vector<vk::PresentModeKHR> const& available_presen
 
 [[nodiscard]] auto make_swapchain(std::uint32_t width, std::uint32_t height, vk::SurfaceKHR surface,
                                   std::pair<vk::PhysicalDevice, QueueFamilyIndices> const& phys_dev,
-                                  vk::Device const& dev) -> vk::SwapchainKHR {
+                                  vk::Device const& dev)
+    -> std::tuple<vk::SwapchainKHR, vk::Format, vk::Extent2D> {
 
   auto const support_details = query_swapchain_support(surface, phys_dev.first);
   auto const surface_format = choose_swap_surface_format(support_details.formats);
@@ -288,7 +289,7 @@ choose_swap_present_mode(std::vector<vk::PresentModeKHR> const& available_presen
                                  true,
                                  {}};
 
-  return dev.createSwapchainKHR(swapchain_info);
+  return std::make_tuple(dev.createSwapchainKHR(swapchain_info), surface_format.format, extent);
 }
 
 [[nodiscard]] auto make_logical_device(vk::PhysicalDevice const& phys_dev,

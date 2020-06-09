@@ -26,7 +26,7 @@ public:
   auto operator=(Rane &&) -> Rane& = delete;
 
   ~Rane() {
-    vkDestroySwapchainKHR(dev_, swapchain_, nullptr);
+    vkDestroySwapchainKHR(dev_, std::get<0>(swapchain_), nullptr);
     vkDestroySurfaceKHR(inst_, surface_, nullptr);
     inst_.destroy();
   }
@@ -45,6 +45,7 @@ private:
   vk::SurfaceKHR surface_ = make_surface(inst_, window_);
   std::pair<vk::PhysicalDevice, QueueFamilyIndices> phys_dev_ = make_phys_dev(inst_, surface_);
   vk::Device dev_ = make_logical_device(phys_dev_.first, phys_dev_.second);
-  vk::SwapchainKHR swapchain_ =
+  std::tuple<vk::SwapchainKHR, vk::Format, vk::Extent2D> swapchain_ =
       make_swapchain(window_width, window_height, surface_, phys_dev_, dev_);
+  std::vector<vk::Image> swapchain_images_ = dev_.getSwapchainImagesKHR(std::get<0>(swapchain_));
 };
