@@ -26,7 +26,7 @@ public:
   auto operator=(Rane &&) -> Rane& = delete;
 
   ~Rane() {
-    // vkDestroySwapchainKHR(dev_, swapchain_, nullptr);
+    vkDestroySwapchainKHR(dev_, swapchain_, nullptr);
     vkDestroySurfaceKHR(inst_, surface_, nullptr);
     inst_.destroy();
   }

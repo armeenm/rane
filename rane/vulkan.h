@@ -137,8 +137,6 @@ struct SwapChainSupportDetails {
   spdlog::debug("# of queue families: {}", queue_families.size());
 
   for (std::size_t i = 0; i < queue_families.size(); ++i) {
-    // auto const present_support = true;
-
     if (queue_families[i].queueFlags & vk::QueueFlagBits::eGraphics) {
       auto const present_support = phys_dev.getSurfaceSupportKHR(std::uint32_t(i), surface);
 
@@ -147,6 +145,14 @@ struct SwapChainSupportDetails {
   }
 
   return {std::nullopt, std::nullopt};
+}
+
+[[nodiscard]] auto query_swapchain_support(vk::SurfaceKHR surface, vk::PhysicalDevice phys_dev)
+    -> SwapChainSupportDetails {
+
+  return SwapChainSupportDetails{phys_dev.getSurfaceCapabilitiesKHR(surface),
+                                 phys_dev.getSurfaceFormatsKHR(surface),
+                                 phys_dev.getSurfacePresentModesKHR(surface)};
 }
 
 [[nodiscard]] auto make_phys_dev(vk::Instance const& inst, vk::SurfaceKHR const& surface)
@@ -190,9 +196,8 @@ struct SwapChainSupportDetails {
       } else {
         supports_exts = true;
 
-        // auto const swapchain_support = query_swapchain_support(surface, phys_dev);
-        // compatible_swapchains = swapchain_support.compatible();
-        compatible_swapchains = true;
+        auto const swapchain_support = query_swapchain_support(surface, phys_dev);
+        compatible_swapchains = swapchain_support.compatible();
       }
     }
 
@@ -201,14 +206,6 @@ struct SwapChainSupportDetails {
   }
 
   throw std::runtime_error{"Failed to find capable physical device"};
-}
-
-[[nodiscard]] auto query_swapchain_support(vk::SurfaceKHR surface, vk::PhysicalDevice phys_dev)
-    -> SwapChainSupportDetails {
-
-  return SwapChainSupportDetails{phys_dev.getSurfaceCapabilitiesKHR(surface),
-                                 phys_dev.getSurfaceFormatsKHR(surface),
-                                 phys_dev.getSurfacePresentModesKHR(surface)};
 }
 
 [[nodiscard]] auto
