@@ -46,6 +46,7 @@ struct SwapChainSupportDetails {
 
   spdlog::debug("Creating Vulkan instance for {} version {}", app_name, version);
 
+  // Check validation layer support //
   if constexpr (debug_build) {
     auto const supported_layers = vk::enumerateInstanceLayerProperties();
 
@@ -112,11 +113,12 @@ struct SwapChainSupportDetails {
   return vk::createInstance(inst_info);
 }
 
-[[nodiscard]] auto make_surface(vk::Instance inst, GlfwWindow const& window) -> vk::SurfaceKHR {
+[[nodiscard]] auto make_surface(vk::Instance const& inst, GlfwWindow const& window)
+    -> vk::SurfaceKHR {
 
   auto surface = vk::SurfaceKHR{};
   auto const res = static_cast<vk::Result>(glfwCreateWindowSurface(
-      inst, window.get(), nullptr, reinterpret_cast<VkSurfaceKHR*>(&surface)));
+      VkInstance(inst), window.get(), nullptr, reinterpret_cast<VkSurfaceKHR*>(&surface)));
 
   if (res != vk::Result::eSuccess)
     throw std::runtime_error{
@@ -125,21 +127,80 @@ struct SwapChainSupportDetails {
   return surface;
 }
 
-[[nodiscard]] auto find_queue_families(vk::SurfaceKHR surface, vk::PhysicalDevice phys_dev)
-    -> QueueFamilyIndices {
+[[nodiscard]] auto find_queue_families(vk::SurfaceKHR const& surface,
+                                       vk::PhysicalDevice const& phys_dev) -> QueueFamilyIndices {
+
   spdlog::debug("Finding queue families...");
 
-  auto const queue_families = phys_dev.getQueueFamilyProperties2();
+  auto const queue_families = phys_dev.getQueueFamilyProperties();
+
+  spdlog::debug("# of queue families: {}", queue_families.size());
 
   for (std::size_t i = 0; i < queue_families.size(); ++i) {
-    // auto const present_support = phys_dev.getSurfaceSupportKHR(std::uint32_t(i), surface);
-    auto const present_support = true;
+    // auto const present_support = true;
 
-    if (queue_families[i].queueFamilyProperties.queueFlags & vk::QueueFlagBits::eGraphics)
+    if (queue_families[i].queueFlags & vk::QueueFlagBits::eGraphics) {
+      auto const present_support = phys_dev.getSurfaceSupportKHR(std::uint32_t(i), surface);
+
       return {i, present_support ? std::make_optional(i) : std::nullopt};
+    }
   }
 
   return {std::nullopt, std::nullopt};
+}
+
+[[nodiscard]] auto make_phys_dev(vk::Instance const& inst, vk::SurfaceKHR const& surface)
+    -> std::pair<vk::PhysicalDevice, QueueFamilyIndices> {
+
+  spdlog::debug("Picking physical device...");
+
+  auto const phys_devs = inst.enumeratePhysicalDevices();
+  auto supports_exts = false;
+  auto compatible_swapchains = false;
+
+  if (phys_devs.size() == 0)
+    throw std::runtime_error{"No physical devices with Vulkan support found"};
+
+  for (auto const& phys_dev : phys_devs) {
+    auto const props = phys_dev.getProperties2();
+
+    spdlog::debug("Physical device {} of type {} found", props.properties.deviceName,
+                  magic_enum::enum_name(props.properties.deviceType));
+
+    auto const queue_indices = find_queue_families(surface, phys_dev);
+
+    auto const dev_exts = phys_dev.enumerateDeviceExtensionProperties();
+
+    for (auto const& dev_ext : dev_exts)
+      spdlog::debug("Device {} supports extension {}", props.properties.deviceName,
+                    dev_ext.extensionName);
+
+    auto dev_ext_strs = dev_exts | ranges::views::transform([](vk::ExtensionProperties const& ext) {
+                          return std::string{ext.extensionName};
+                        });
+
+    for (auto const& required_dev_ext : required_dev_exts) {
+      auto const pos = ranges::find(dev_ext_strs, required_dev_ext);
+
+      if (pos == dev_ext_strs.end()) {
+        supports_exts = false;
+        spdlog::debug("Device {} does not support required extension {}",
+                      props.properties.deviceName, required_dev_ext);
+        break;
+      } else {
+        supports_exts = true;
+
+        // auto const swapchain_support = query_swapchain_support(surface, phys_dev);
+        // compatible_swapchains = swapchain_support.compatible();
+        compatible_swapchains = true;
+      }
+    }
+
+    if (queue_indices.has_values() && supports_exts && compatible_swapchains)
+      return {phys_dev, queue_indices};
+  }
+
+  throw std::runtime_error{"Failed to find capable physical device"};
 }
 
 [[nodiscard]] auto query_swapchain_support(vk::SurfaceKHR surface, vk::PhysicalDevice phys_dev)
@@ -231,60 +292,6 @@ choose_swap_present_mode(std::vector<vk::PresentModeKHR> const& available_presen
                                  {}};
 
   return dev.createSwapchainKHR(swapchain_info);
-}
-
-[[nodiscard]] auto pick_phys_dev(vk::Instance const& inst, vk::SurfaceKHR const& surface)
-    -> std::pair<vk::PhysicalDevice, QueueFamilyIndices> {
-
-  spdlog::debug("Picking physical device...");
-
-  auto const phys_devs = inst.enumeratePhysicalDevices();
-  auto supports_exts = false;
-  auto compatible_swapchains = false;
-
-  if (phys_devs.size() == 0)
-    throw std::runtime_error{"No physical devices with Vulkan support found"};
-
-  for (auto const& phys_dev : phys_devs) {
-    auto const props = phys_dev.getProperties2();
-
-    spdlog::debug("Physical device {} of type {} found", props.properties.deviceName,
-                  magic_enum::enum_name(props.properties.deviceType));
-
-    auto const queue_indices = find_queue_families(surface, phys_dev);
-
-    auto const dev_exts = phys_dev.enumerateDeviceExtensionProperties();
-
-    for (auto const& dev_ext : dev_exts)
-      spdlog::debug("Device {} supports extension {}", props.properties.deviceName,
-                    dev_ext.extensionName);
-
-    auto dev_ext_strs = dev_exts | ranges::views::transform([](vk::ExtensionProperties const& ext) {
-                          return std::string{ext.extensionName};
-                        });
-
-    for (auto const& required_dev_ext : required_dev_exts) {
-      auto const pos = ranges::find(dev_ext_strs, required_dev_ext);
-
-      if (pos == dev_ext_strs.end()) {
-        supports_exts = false;
-        spdlog::debug("Device {} does not support required extension {}",
-                      props.properties.deviceName, required_dev_ext);
-        break;
-      } else {
-        supports_exts = true;
-
-        // auto const swapchain_support = query_swapchain_support(surface, phys_dev);
-        // compatible_swapchains = swapchain_support.compatible();
-        compatible_swapchains = true;
-      }
-    }
-
-    if (queue_indices.has_values() && supports_exts && compatible_swapchains)
-      return {phys_dev, queue_indices};
-  }
-
-  throw std::runtime_error{"Failed to find capable physical device"};
 }
 
 [[nodiscard]] auto make_logical_device(vk::PhysicalDevice const& phys_dev,
