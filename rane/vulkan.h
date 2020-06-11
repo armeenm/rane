@@ -4,6 +4,8 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <imgui.h>
+#include <imgui_impl_vulkan.h>
 #include <magic_enum.hpp>
 #include <optional>
 #include <range/v3/algorithm/find.hpp>
@@ -13,7 +15,6 @@
 #include <string_view>
 #include <utility>
 #include <vector>
-#include <vulkan/vk_layer.h>
 #include <vulkan/vulkan.hpp>
 
 #ifdef NDEBUG
@@ -21,24 +22,6 @@ auto constexpr inline debug_build = false;
 #else
 auto constexpr inline debug_build = false;
 #endif
-
-auto const inline validation_layers = std::vector{"VK_LAYER_KHRONOS_validation"};
-auto const inline required_dev_exts = std::vector{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-
-struct QueueFamilyIndices {
-  std::optional<std::uint32_t> graphics_family;
-  std::optional<std::uint32_t> present_family;
-
-  auto has_values() const noexcept -> bool { return graphics_family && present_family; }
-};
-
-struct SwapChainSupportDetails {
-  vk::SurfaceCapabilitiesKHR capabilities;
-  std::vector<vk::SurfaceFormatKHR> formats;
-  std::vector<vk::PresentModeKHR> present_modes;
-
-  auto compatible() const noexcept -> bool { return !formats.empty() && !present_modes.empty(); }
-};
 
 [[nodiscard]] auto make_instance(GlfwCtx&, std::uint32_t const version, std::string_view app_name)
     -> vk::Instance {
@@ -147,7 +130,8 @@ struct SwapChainSupportDetails {
   return {std::nullopt, std::nullopt};
 }
 
-[[nodiscard]] auto query_swapchain_support(vk::SurfaceKHR surface, vk::PhysicalDevice phys_dev)
+[[nodiscard]] auto query_swapchain_support(vk::SurfaceKHR const& surface,
+                                           vk::PhysicalDevice const& phys_dev)
     -> SwapChainSupportDetails {
 
   return SwapChainSupportDetails{phys_dev.getSurfaceCapabilitiesKHR(surface),
@@ -208,8 +192,8 @@ struct SwapChainSupportDetails {
   throw std::runtime_error{"Failed to find capable physical device"};
 }
 
-[[nodiscard]] auto make_logical_device(vk::PhysicalDevice const& phys_dev,
-                                       QueueFamilyIndices const& queue_indices) -> vk::Device {
+[[nodiscard]] auto make_dev(vk::PhysicalDevice const& phys_dev,
+                            QueueFamilyIndices const& queue_indices) -> vk::Device {
   spdlog::debug("Constructing logical device...");
 
   auto const priority = 1.0F;
@@ -226,6 +210,27 @@ struct SwapChainSupportDetails {
                                                     &dev_features};
 
   return phys_dev.createDevice(dev_create_info);
+}
+
+[[nodiscard]] auto make_desc_pool(vk::Device const& dev) -> vk::DescriptorPool {
+  auto const pool_sizes = std::array{
+      vk::DescriptorPoolSize{vk::DescriptorType::eSampler, 1000},
+      vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, 1000},
+      vk::DescriptorPoolSize{vk::DescriptorType::eSampledImage, 1000},
+      vk::DescriptorPoolSize{vk::DescriptorType::eStorageImage, 1000},
+      vk::DescriptorPoolSize{vk::DescriptorType::eUniformTexelBuffer, 1000},
+      vk::DescriptorPoolSize{vk::DescriptorType::eStorageTexelBuffer, 1000},
+      vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 1000},
+      vk::DescriptorPoolSize{vk::DescriptorType::eStorageBuffer, 1000},
+      vk::DescriptorPoolSize{vk::DescriptorType::eUniformBufferDynamic, 1000},
+      vk::DescriptorPoolSize{vk::DescriptorType::eStorageBufferDynamic, 1000},
+      vk::DescriptorPoolSize{vk::DescriptorType::eInputAttachment, 1000},
+  };
+
+  auto const pool_info = vk::DescriptorPoolCreateInfo{
+      {}, 1000U * pool_sizes.size(), pool_sizes.size(), pool_sizes.data()};
+
+  return dev.createDescriptorPool(pool_info);
 }
 
 [[nodiscard]] auto

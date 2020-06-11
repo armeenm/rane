@@ -1,8 +1,5 @@
-#include "rane/glfw.h"
 #include "rane/rane.h"
-#include "rane/vulkan.h"
 
-#include <fmt/core.h>
 #include <spdlog/spdlog.h>
 
 int main() {
