@@ -1,0 +1,11 @@
+[package]
+name = "rane"
+version = "0.1.0"
+authors = ["Armeen Mahdian <mahdianarmeen@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+vulkano = "0.19"
+
+[dependencies.glfw]
+git = "https://github.com/bjz/glfw-rs.git"
